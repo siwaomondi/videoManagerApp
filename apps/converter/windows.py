@@ -22,6 +22,7 @@ def folder_select(btn_command, btn_colour, rx, ry, app_icon):
     different_btn.grid(row=1, column=1, padx=15)
 
 
+
 class DWindow:
     def __init__(self, event, c_cmd, bgcolor, rx, ry, app_icon, files_completed_var, time_left_var, finish_time_var,
                  current_file_var):

@@ -35,7 +35,7 @@ class VideoManager:
 
 
         # HOME FRAME
-        self.home_frame.pack(fill="both", expand=True, padx=30, pady=(10, 10))
+        # self.home_frame.pack(fill="both", expand=True, padx=30, pady=(10, 10))
         self.list_of_frames = [self.home_frame,self.ytDownloadFrame,self.mp4ConverterFrame]
 
         # MAIN MENU

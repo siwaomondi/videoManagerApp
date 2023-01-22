@@ -9,6 +9,9 @@ customtkinter = "*"
 ffmpeg-python = "*"
 ez-setup = "*"
 func-timeout = "*"
+pip = "*"
+opencv-python = "*"
+pytube = "*"
 
 [dev-packages]
 

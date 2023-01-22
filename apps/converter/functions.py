@@ -1,7 +1,7 @@
 import time
 import datetime
 import func_timeout
-from cv2 import cv2
+from cv2 import (cv2)
 import subprocess
 import webbrowser
 

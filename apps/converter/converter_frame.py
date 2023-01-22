@@ -10,9 +10,9 @@ import tkinter
 import func_timeout
 import moviepy.editor as mp
 from customtkinter import CTkButton, CTkLabel, CTk
-from windows import DWindow, folder_select
 
-from functions import convert_time, get_file_duration, calc_time_left, open_webpage,generate_total_file_time
+from apps.converter.windows import DWindow, folder_select
+from apps.converter.functions import convert_time, get_file_duration, calc_time_left, open_webpage,generate_total_file_time
 
 
 class FileExistsError(Exception):
