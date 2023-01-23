@@ -4,10 +4,11 @@ from tkinter import OptionMenu
 from customtkinter import CTkButton, CTkLabel, CTk,CTkEntry,CTkOptionMenu
 
 from pytube import YouTube
+import pytube.exceptions as pytExcept
 from pytube import Playlist
 from math import ceil
-import sys
 import threading
+
 
 
 from constants import Constants
@@ -17,6 +18,8 @@ from apps.converter.windows import DWindow, folder_select
 class error_messages:
     invalid ="Invalid url. Confirm and try again",
     empty= "No url provided. Try again"
+    notPlaylist = "Link provided is not a playlist"
+    playlistInvalid = 'Playlist link is not valid.'
 class YtDownloaderFrame(Frame):
 
     def __init__(self,root):
@@ -62,38 +65,50 @@ class YtDownloaderFrame(Frame):
 
 
     def _download_videos (self):
+        #TODO: add functionality for playlist or video availability/privacy check
         try:
-            self.download_playlist = Playlist(self.link_entry.get())
+            url = self.link_entry.get()
+            desc = YouTube(url).description
+            self.save_directory = filedialog.askdirectory()
+            self._downloadAction([url], 0)
+        except pytExcept.RegexMatchError:
+            self.download_playlist = Playlist(url)
+            self._playlistDownload()      
             #self.download_playlist.length ##use to generate error in case of non-playlist url
-        except:
+        except Exception as e:
+            #TODO: add privacy/availability check
             if self.link_entry.get() == "":
                 messagebox.showerror("Missing url", error_messages.empty)
             else:
                 messagebox.showerror("Incorrect url", error_messages.invalid)
             return
-        size = 0
-        links =[]
+
+
+    def _playlistDownload(self):
+        #TODO: add functionality to skip private/unavailable videos in playlist  
+        links =[]      
         try:
             for url in self.download_playlist:
                 links.append(url)
         except:
-            print('Playlist link is not valid.')
+            messagebox.showerror("Incorrect url", error_messages.playlistInvalid)
             return
 
         self.save_directory = filedialog.askdirectory()
-        size = ceil(len(links)/4)
+        #TODO: sort out this for threading
+        size = ceil(len(links)/4) # size of each of the list for the threads
         def split_link(links,size):
-            for i in range(0,len(links),size):
+            for i in range(0,len(links),size):                
                 yield links[i:i+size]
 
         link = list(split_link(links,size))
-
         self._downloadThreading(link=link)
 
     def _downloadAction(self, linkList, threadNum):
         quality = self.download_quality.get()
         for i in linkList:
             yt = YouTube(i)
+            # print(yt.check_availability())
             if quality =="highest":
                 ys = yt.streams.get_highest_resolution()
             else:
@@ -103,26 +118,17 @@ class YtDownloaderFrame(Frame):
             # print(f"threading {threadNum} -->  {filename.split('/')[-1]} Downloaded")
 
     def _downloadThreading(self,link):
-        def downloader1():
-            self._downloadAction(link[0],1)
+        #TODO: Modify thread functionality depending on playlist size
+        #TODO: add index error catch for threads
+        downloaders = [self._downloadAction(link[x],y) for x,y in enumerate(range(1,5))]
+        threads = [threading.Thread(target=downloader, name=f"d{index}") for index,downloader in enumerate(downloaders,start=1)]
+        for thread in threads:
+            thread.start()
 
-        def downloader2():
-            self._downloadAction(link[1],2)
+        # downloader = self._downloadAction(link[0],1)
+        # thread = threading.Thread(target=downloader, name=f"d1")
+        # thread.start()
 
-        def downloader3():
-            self._downloadAction(link[2],3)
-
-        def downloader4():
-            self._downloadAction(link[3],4)
-
-        t1 = threading.Thread(target=downloader1, name='d1')
-        t2 = threading.Thread(target=downloader2,name='d2')
-        t3 = threading.Thread(target=downloader3, name='d3')
-        t4 = threading.Thread(target=downloader4,name='d4')
-        t1.start()
-        t2.start()
-        t3.start()
-        t4.start()
 
     def _cancel_conversion(self):
         return messagebox.askokcancel("Stop Downloads", "Cancel ongoing downloads?")
