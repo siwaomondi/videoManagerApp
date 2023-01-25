@@ -7,6 +7,7 @@ class FileExistsError(Exception):
 
 from apps.converter.converter_frame import ConverterFrame
 from apps.ytDownload.yt_download_frame import YtDownloaderFrame
+from apps.clipper.clipper_frame import ClipperFrame
 from apps.home.home_frame import HomeFrame
 from constants import Constants
 
@@ -30,7 +31,8 @@ class VideoManager:
             root=self.root
         )
         self.ytDownloadFrame = YtDownloaderFrame(root=self.root)
-        self.home_frame = HomeFrame(root =self.root,open_command=self._open_select_frame,mp4Frame=self.mp4ConverterFrame,yTFrame=self.ytDownloadFrame)
+        self.clipperFrame = ClipperFrame(root=self.root)
+        self.home_frame = HomeFrame(root =self.root,open_command=self._open_select_frame,mp4Frame=self.mp4ConverterFrame,yTFrame=self.ytDownloadFrame,clipperFrame=self.clipperFrame)
 
 
 
@@ -50,6 +52,7 @@ class VideoManager:
         self.file_menu.add_command(label="Home", command=lambda:self._open_select_frame(self.home_frame))
         self.file_menu.add_command(label="Convert", command=lambda:self._open_select_frame(self.mp4ConverterFrame))
         self.file_menu.add_command(label="YTDownload", command=lambda:self._open_select_frame(self.ytDownloadFrame))
+        self.file_menu.add_command(label="Clipper", command=lambda:self._open_select_frame(self.clipperFrame))
         self.file_menu.add_command(label="Exit", command=self.root.quit)
         
 
