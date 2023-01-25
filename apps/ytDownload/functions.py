@@ -41,7 +41,7 @@ def generate_details(playlist:bool,playlist_obj,video_obj):
         details = f"Video Title : {fetch_details(video_obj, 'title')}\nChannel : {fetch_details(video_obj, 'author')}\nVideo views: {fetch_details(video_obj, 'views')}"
     return details
 
-def generate_filename(yt_obj,is_playlist=False, idx="null",numbering=False):
+def generate_filename(yt_obj,idx,is_playlist=False,numbering=False):
     """returns formatted raw filename """
 
     f_name = getattr(yt_obj, "title")
@@ -49,7 +49,8 @@ def generate_filename(yt_obj,is_playlist=False, idx="null",numbering=False):
     f_name = f_name.replace("/",
                             "_")  # catch file naming from youtube to avoid clash with directory naming [Errno 2] error
     f_name = f_name.replace("\\", "_")
-    if is_playlist and idx != "null" and numbering:
+
+    if is_playlist and numbering:
         try:
             int(f_name.split(".")[0])
         except ValueError:

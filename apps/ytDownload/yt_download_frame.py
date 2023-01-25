@@ -1,13 +1,10 @@
-import math
 from tkinter import filedialog, Menu, Frame, END, scrolledtext, messagebox, WORD, StringVar, Label
 import tkinter
-from tkinter import OptionMenu
 from customtkinter import CTkButton, CTkLabel, CTk, CTkEntry, CTkOptionMenu
 
 from pytube import YouTube
 import pytube.exceptions as pytExcept
 from pytube import Playlist
-from math import ceil
 from threading import Thread, Event
 import threading
 import asyncio
@@ -17,7 +14,6 @@ from multiprocessing.pool import ThreadPool, Pool
 import time
 
 from constants import Constants
-from apps.converter.windows import DWindow, folder_select
 from apps.ytDownload.functions import split_link, generate_filename, generate_details
 
 
@@ -70,8 +66,10 @@ class YtDownloaderFrame(Frame):
         self.audio_event = Event()
         # self.video_event.set()
 
+
+
+        #***********FRAME BODY************/
         self.root = root
-        self.root.title("YT_Download | VIDMAN")
         self.main_label = CTkLabel(
             self, text="Welcome", text_font=("Montserrat", 30, "bold"))
         self.main_label.grid(row=0, column=0, columnspan=2)
@@ -131,10 +129,10 @@ class YtDownloaderFrame(Frame):
         elif btn == "start_audio_download":
             self.audio_event.set()
             self.downloadAudio()
-            self._end_of_downloads()
+            # self._end_of_downloads()
         self._downloading_check()
 
-    def check_url(self, url):
+    def _check_url(self, url):
         if self.link_entry.get() == "":
             messagebox.showerror("Missing url", error_messages.empty)
         try:
@@ -152,13 +150,14 @@ class YtDownloaderFrame(Frame):
         if self.is_playlist:
             time.sleep(0.5)
             self.number_files = messagebox.askyesno("Numbering prompt",
-                                        "Do you want to number files according to the playlist order?",
-                                        default="no")
+                                                    "Do you want to number files according to the playlist order?",
+                                                    default="no")
+
     def _download_videos(self):
         # TODO: add functionality for playlist or video availability/privacy check
         # TODO: add functionality for single video download
         url = self.link_entry.get()
-        self.check_url(url=url)
+        self._check_url(url=url)
         singleVid = False
         self._playlistDownload(singleVideo=singleVid, singleLink=url)
 
@@ -172,17 +171,19 @@ class YtDownloaderFrame(Frame):
         else:
             links = [singleLink]
 
-        enumerate_Linklist = [[videoNum, link] for videoNum, link in
-                              enumerate(links, start=1)]  # enumerate for eventual file numbering on playlist download
-        self.links_break = split_link(enumerate_Linklist, self.threadCount)
+        self.links_break = split_link(self._enumerate_linklist(links), self.threadCount)
         self._downloadThreading()
-
+    def _enumerate_linklist(self,links):
+        """returns enumerated links for eventual file numbering on playlist download"""
+        return [[videoNum, link] for videoNum, link in
+                enumerate(links, start=1)] 
     def downloadAudio(self):
-        def singleAudio(get_url):
+        def singleAudio(get_url,index="null"):
             file = YouTube(url=get_url)
-            title = f"{generate_filename(yt_obj=file)}.mp3"
+            title = f"{generate_filename(yt_obj=file, idx=index, is_playlist=self.is_playlist, numbering=self.number_files)}.mp3" 
             try:
-                file.streams.get_audio_only().download(output_path=self.save_directory, filename=title, skip_existing=True)
+                file.streams.get_audio_only().download(output_path=self.save_directory, filename=title,
+                                                       skip_existing=True)
                 self.completed_audio_list.append(title)
                 self.audio_list.append(f"{title}")
                 self._render_file_names(audio_download=True)
@@ -195,13 +196,11 @@ class YtDownloaderFrame(Frame):
                 pass
             self.update_idletasks()
 
-        def audio_downloading_func(get_url, directory):
+        def audio_downloading_func(get_url):
             if self.is_playlist:
-                print(f"Playlist length:{self.download_playlist.length}")
-                for link in self.download_playlist:
+                for idx ,link in enumerate(self.download_playlist,start=1):
                     if self.audio_event.is_set():
-                        singleAudio(link, directory)
-
+                        singleAudio(link,index=idx)
                     else:
                         self.download_cancelled = True
                         break
@@ -210,14 +209,22 @@ class YtDownloaderFrame(Frame):
             self._render_file_names(audio_finished=True, )
 
         url = self.link_entry.get()
-        self.check_url(url=url)
-        try:
-            audio_downloading_func(get_url=url)
-        except Exception as e:
-            print(e)
-            pass
+        self._check_url(url=url)
+        def func():
+            self._downloading_check()
+            try:
+                audio_downloading_func(get_url=url)
+            except Exception as e:
+                print(e)
+                pass
+        t = threading.Thread(target=func, daemon=True, name="Audio Thread")
+        print(f"audio download(s) has started")
+        func()
+        self._end_of_downloads(is_audio=True)
 
-    def _downloadAction(self, linkList, threadNum):
+
+
+    def _download_video_thread(self, linkList, threadNum):
         quality = self.download_quality.get()
         print(f"Thread {threadNum} started :{len(linkList)} files")
 
@@ -256,34 +263,37 @@ class YtDownloaderFrame(Frame):
                 self.download_cancelled = True
                 break
 
-    def _end_of_downloads(self):
+    def _end_of_downloads(self,is_audio=False):
 
         feedback = "Cancelled" if self.download_cancelled else "done"
         if self.download_cancelled:
             messagebox.showerror(
                 "Downloads canceled", f"Conversion canceled.\n{feedback}")
-            self._render_file_names(cancelled=self.download_cancelled)
+            self._render_file_names(cancelled=self.download_cancelled,audio_finished=is_audio)
 
         else:
             messagebox.showinfo("Downloads complete",
                                 f"All Done.\n{feedback}")
-            self._render_file_names(final=True)
+            self._render_file_names(final=True,audio_finished=is_audio)
         self._downloading_check()
         self._reset_vars()
 
     def _downloadThreading(self):
         """runs the threads for video downloads"""
-        self.download_details = generate_details(self.is_playlist,self.download_playlist,self.single_video_object)
+        self.download_details = generate_details(self.is_playlist, self.download_playlist, self.single_video_object)
         num_of_downloaders = len(self.links_break)
         print(self.download_details)
         print(f"Total threads : {num_of_downloaders}\n")
 
         threads = []
         for x in range(num_of_downloaders):
-            t = threading.Thread(target=self._downloadAction, daemon=True, name=f"Thread {x + 1}",
+            t = threading.Thread(target=self._download_video_thread, daemon=True, name=f"Thread {x + 1}",
                                  args=(self.links_break[x], (x + 1)))
             threads.append(t)
             t.start()
+        # TODO: add thread join method
+        for thread in threads:
+            thread.join()
         # async def main():
         #     list_of_tasks = []
         #     for x in range(num_of_downloaders):
@@ -294,7 +304,7 @@ class YtDownloaderFrame(Frame):
         #         await task
 
         # asyncio.run(main())
-        # TODO: add thread join method
+        
 
     def _downloading_check(self):
         """disable buttons while download is ongoing"""
@@ -363,27 +373,30 @@ class YtDownloaderFrame(Frame):
                     not_downloaded = "FAILED VIDEO URLS\n\n" if video else "FAILED AUDIO DOWNLOADS\n\n"
                     if completed_list:
                         for i in completed_list[::-1]:
-                            downloaded += f"  •{i}"
+                            downloaded += f"•    {i}\n"
                     else:
                         downloaded += "•    No files Downloaded"
                     if failed_list:
                         for i in failed_list:
-                            not_downloaded += f"  •{i}"
+                            not_downloaded += f"•    {i}\n"
                     else:
                         not_downloaded += "•    No downloads failed"
                     attachment = f"{not_downloaded}\n\n{downloaded}"
 
                     return f'SESSION {(status).capitalize()}\n\n{attachment}'
 
-                if final:
-                    text = final_text("COMPLETE", self.completed_video_list, self.failed_video_list)
-                elif cancelled:
-                    text = final_text("CANCELLED", self.completed_video_list, self.failed_video_list)
-                elif kwargs.get('audio_finished'):
+
+                if kwargs.get('audio_finished'):
                     if not self.download_cancelled:
                         text = final_text("complete", self.completed_audio_list, self.failed_audio_list, False)
                     else:
                         text = final_text("cancelled", self.completed_audio_list, self.failed_audio_list, False)
+                else:
+                    if final:
+                        text = final_text("COMPLETE", self.completed_video_list, self.failed_video_list)
+                    elif cancelled:
+                        text = final_text("CANCELLED", self.completed_video_list, self.failed_video_list)
+
 
         self.files_textbox.config(state="normal")
         self.files_textbox.delete(1.0, "end")
