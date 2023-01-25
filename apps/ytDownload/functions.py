@@ -32,16 +32,16 @@ def fetch_details(object, var):
         return getattr(object, var)
     except:
         return "Not Found"
-        
-def generate_details(playlist:bool):
+
+def generate_details(playlist:bool,playlist_obj,video_obj):
     """returns formatted string of the download process details"""
     if playlist:
-        details = f"Playlist Name : {fetch_details(self.download_playlist, 'title')}\nChannel Name  : {fetch_details(self.download_playlist, 'owner')}\nTotal Videos  : {fetch_details(self.download_playlist, 'length')}\nTotal Views   : {fetch_details(self.download_playlist, 'views')}"
+        details = f"Playlist Name : {fetch_details(playlist_obj, 'title')}\nChannel Name  : {fetch_details(playlist_obj, 'owner')}\nTotal Videos  : {fetch_details(playlist_obj, 'length')}\nTotal Views   : {fetch_details(playlist_obj, 'views')}"
     else:
-        details = f"Video Title : {fetch_details(self.singleVid, 'title')}\nChannel : {fetch_details(self.singleVid, 'author')}\nVideo views: {fetch_details(self.singleVid, 'views')}"
+        details = f"Video Title : {fetch_details(video_obj, 'title')}\nChannel : {fetch_details(video_obj, 'author')}\nVideo views: {fetch_details(video_obj, 'views')}"
     return details
 
-def generate_filename(yt_obj,is_playlist=False, idx="null"):
+def generate_filename(yt_obj,is_playlist=False, idx="null",numbering=False):
     """returns formatted raw filename """
 
     f_name = getattr(yt_obj, "title")
@@ -49,7 +49,7 @@ def generate_filename(yt_obj,is_playlist=False, idx="null"):
     f_name = f_name.replace("/",
                             "_")  # catch file naming from youtube to avoid clash with directory naming [Errno 2] error
     f_name = f_name.replace("\\", "_")
-    if is_playlist and idx != "null":
+    if is_playlist and idx != "null" and numbering:
         try:
             int(f_name.split(".")[0])
         except ValueError:

@@ -14,10 +14,12 @@ import asyncio
 
 from concurrent.futures import ThreadPoolExecutor, Executor
 from multiprocessing.pool import ThreadPool, Pool
+import time
 
 from constants import Constants
 from apps.converter.windows import DWindow, folder_select
-from apps.ytDownload.functions import split_link, generate_filename,generate_details
+from apps.ytDownload.functions import split_link, generate_filename, generate_details
+
 
 class error_messages:
     invalid = "Invalid url. Confirm and try again",
@@ -47,7 +49,7 @@ class YtDownloaderFrame(Frame):
         self.download_quality = StringVar()
         self.save_directory = ''
         self.links_break = []
-        self.singleVidUrl = ''
+        self.single_video_object = None
         self.skipped = 0
         self.failed_video_list = []
         self.downloading_list = []
@@ -55,6 +57,7 @@ class YtDownloaderFrame(Frame):
         self.download_details = ''
         self.download_cancelled = False
         self.is_playlist = False
+        self.number_files = False
 
         # AUDIOS
         self.audio_list = []
@@ -135,36 +138,28 @@ class YtDownloaderFrame(Frame):
         if self.link_entry.get() == "":
             messagebox.showerror("Missing url", error_messages.empty)
         try:
-            self.singleVid = YouTube(url)
+            self.single_video_object = YouTube(url)
         except pytExcept.RegexMatchError:
             self.download_playlist = Playlist(url)
             self.is_playlist = True
+
         except Exception as e:
             print(e)
             messagebox.showerror("Incorrect url", error_messages.invalid)
             return
-
+        self.save_directory = filedialog.askdirectory().replace("/",
+                                                                "\\")  # convert path to raw string for to avoid OSError: [Errno 22] Invalid argument
+        if self.is_playlist:
+            time.sleep(0.5)
+            self.number_files = messagebox.askyesno("Numbering prompt",
+                                        "Do you want to number files according to the playlist order?",
+                                        default="no")
     def _download_videos(self):
         # TODO: add functionality for playlist or video availability/privacy check
         # TODO: add functionality for single video download
         url = self.link_entry.get()
         self.check_url(url=url)
         singleVid = False
-        # try:
-        #     # try:
-        #     #     if YouTube(url):
-        #     #         raise SingleVideoPlaylistError
-        #     # except pytExcept.RegexMatchError:                              
-        #     #     self.download_playlist = Playlist(url)
-        # except (SingleVideoPlaylistError) :
-        #     singleVid = True
-        #     # self.singleVid = YouTube(url)
-        # except Exception as e:
-        #     #TODO: add privacy/availability check
-        #     print(e)
-        #     messagebox.showerror("Incorrect url", error_messages.invalid)
-        #     return
-        # finally:
         self._playlistDownload(singleVideo=singleVid, singleLink=url)
 
     def _playlistDownload(self, singleLink, singleVideo=False):
@@ -177,21 +172,17 @@ class YtDownloaderFrame(Frame):
         else:
             links = [singleLink]
 
-        self.save_directory = filedialog.askdirectory().replace("/",
-                                                                "\\")  # convert path to raw string for to avoid OSError: [Errno 22] Invalid argument
         enumerate_Linklist = [[videoNum, link] for videoNum, link in
                               enumerate(links, start=1)]  # enumerate for eventual file numbering on playlist download
-        self.links_break = split_link(enumerate_Linklist,self.threadCount)
-        print(f"linkbreaks:{len(self.links_break)}\nlist:{self.num_of_links}")
+        self.links_break = split_link(enumerate_Linklist, self.threadCount)
         self._downloadThreading()
 
-
     def downloadAudio(self):
-        def singleAudio(get_url, save_directory):
+        def singleAudio(get_url):
             file = YouTube(url=get_url)
             title = f"{generate_filename(yt_obj=file)}.mp3"
             try:
-                file.streams.get_audio_only().download(output_path=save_directory, filename=title, skip_existing=True)
+                file.streams.get_audio_only().download(output_path=self.save_directory, filename=title, skip_existing=True)
                 self.completed_audio_list.append(title)
                 self.audio_list.append(f"{title}")
                 self._render_file_names(audio_download=True)
@@ -220,10 +211,8 @@ class YtDownloaderFrame(Frame):
 
         url = self.link_entry.get()
         self.check_url(url=url)
-        audio_directory = filedialog.askdirectory().replace("/", "\\")
-
         try:
-            audio_downloading_func(get_url=url, directory=audio_directory)
+            audio_downloading_func(get_url=url)
         except Exception as e:
             print(e)
             pass
@@ -231,22 +220,23 @@ class YtDownloaderFrame(Frame):
     def _downloadAction(self, linkList, threadNum):
         quality = self.download_quality.get()
         print(f"Thread {threadNum} started :{len(linkList)} files")
+
         # using enumerate list to generate numbered file names in event of unnumbered file name or file numbering done at end of file name
         # to aid in file sorting in directory 
-        def singleDownload():
+        def singleDownload(index):
             yt = YouTube(url)
             try:
-                filename = f"{generate_filename(yt_obj=yt, idx=index,is_playlist=self.is_playlist)}.mp4"
-                # stream = yt.streams
-                # try:
-                #     stream.get_by_resolution(str(quality)).download(output_path=self.save_directory, max_retries=1)
-                # except Exception as e:
-                #     if self.is_playlist:  # avoid rename of single video files
-                #         stream.get_highest_resolution().download(output_path=self.save_directory, filename=filename,
-                #                                                  max_retries=1, skip_existing=True)
-                #     else:
-                #         stream.get_highest_resolution().download(output_path=self.save_directory, max_retries=1,
-                #                                                  skip_existing=True)
+                filename = f"{generate_filename(yt_obj=yt, idx=index, is_playlist=self.is_playlist, numbering=self.number_files)}.mp4"
+                stream = yt.streams
+                try:
+                    stream.get_by_resolution(str(quality)).download(output_path=self.save_directory, max_retries=1)
+                except Exception as e:
+                    if self.is_playlist:  # avoid rename of single video files
+                        stream.get_highest_resolution().download(output_path=self.save_directory, filename=filename,
+                                                                 max_retries=1, skip_existing=True)
+                    else:
+                        stream.get_highest_resolution().download(output_path=self.save_directory, max_retries=1,
+                                                                 skip_existing=True)
                 print(f" Thread {threadNum} -->{filename} downloaded")
                 self.downloading_list.append(f"✓ {filename}")
                 self.completed_video_list.append(filename)
@@ -261,7 +251,7 @@ class YtDownloaderFrame(Frame):
 
         for index, url in linkList:
             if self.video_event.is_set():
-                singleDownload()
+                singleDownload(index=index)
             else:
                 self.download_cancelled = True
                 break
@@ -283,14 +273,15 @@ class YtDownloaderFrame(Frame):
 
     def _downloadThreading(self):
         """runs the threads for video downloads"""
-        self.download_details = generate_details(self.is_playlist)
+        self.download_details = generate_details(self.is_playlist,self.download_playlist,self.single_video_object)
         num_of_downloaders = len(self.links_break)
         print(self.download_details)
         print(f"Total threads : {num_of_downloaders}\n")
 
         threads = []
         for x in range(num_of_downloaders):
-            t = threading.Thread(target=self._downloadAction,daemon=True, name=f"Thread {x+1}",args=(self.links_break[x],(x+1)))
+            t = threading.Thread(target=self._downloadAction, daemon=True, name=f"Thread {x + 1}",
+                                 args=(self.links_break[x], (x + 1)))
             threads.append(t)
             t.start()
         # async def main():
@@ -404,7 +395,7 @@ class YtDownloaderFrame(Frame):
         self.download_playlist = []
         self.video_quality.set("480p")
         self.links_break = []
-        self.singleVidUrl = ''
+        self.single_video_object = None
         self.skipped = 0
         self.downloading_list = []
         self.completed_video_list = []
@@ -412,6 +403,7 @@ class YtDownloaderFrame(Frame):
         self.download_details = ''
         self.download_cancelled = False
         self.is_playlist = False
+        self.number_files = False
 
         self.failed_audio_list = []
         self.completed_audio_list = []
