@@ -12,19 +12,20 @@ import moviepy.editor as mp
 from customtkinter import CTkButton, CTkLabel, CTk
 
 from apps.converter.windows import DWindow, folder_select
-from apps.converter.functions import convert_time, get_file_duration, calc_time_left, open_webpage,generate_total_file_time
-
+from apps.converter.functions import convert_time, get_file_duration, calc_time_left
 
 class FileExistsError(Exception):
     pass
 
-from constants import Constants
+from constants import Constants,open_webpage
 
 
 class ConverterFrame(Frame):
-    def __init__(self,root):
+    def __init__(self,root,rx,ry):
         super().__init__(root)
         # CONSTS
+        self.rx = rx
+        self.ry= ry
         self.acceptable_file_list = ["MP4", "MOV",
                                      "WMV", "AVI", "FLV", "MKV", "WEBM"]
         self.acceptable_file_types = [
@@ -51,7 +52,6 @@ class ConverterFrame(Frame):
 
         # /********ROOT**********/
         self.root = root
-        self.root.title("Audiofy  | VIDMAN")
 
         # PROGRESSBAR VARIABLES
         self.time_left_label_var = StringVar()
@@ -103,16 +103,16 @@ class ConverterFrame(Frame):
 
         self.footer_label = Label(self, bg=Constants.blue, text="Audiofy by Siwa©",font=("Montserrat",10,))
         self.footer_label.grid(row=7, column=0, columnspan=2)
-        self.footer_label.bind("<Button-1>", open_webpage)
+        self.footer_label.bind("<ButtonRelease-1>", open_webpage)
         # mainloop
         self._render_file_names(self.conversion_list)
         self._reset_variables()
-        
+ 
     def _directory_select(self):
         if len(self.conversion_list) == 0:
             messagebox.showerror("No files", "No files selected to convert")
             return
-        folder_select(self._convert_files, Constants.blue, self.rx, self.ry, self.app_icon)
+        folder_select(self._convert_files,self.rx,self.ry)
 
     def _cancel_conversion(self):
         return messagebox.askokcancel("Stop conversion", "Cancel ongoing conversion?")
@@ -155,7 +155,7 @@ class ConverterFrame(Frame):
             elif btn == "clear_selection":
                 _clear_selection()
             elif btn == "convert_selection":
-                self._directory_popup()
+                self._directory_select()
 
     def _upload_files(self):
         files = filedialog.askopenfiles(
@@ -255,7 +255,7 @@ class ConverterFrame(Frame):
         self.clear_btn.configure(text="Cancel current conversion",
                                  command=lambda: self._manage_btn("end_current_conversion"))
 
-        d_window = DWindow(self.event, self._cancel_conversion, Constants.grey, self.rx, self.ry, self.app_icon,
+        d_window = DWindow(self.event, self._cancel_conversion, Constants.grey, self.rx, self.ry, Constants.app_icon,
                            self.files_completed_var, self.time_left_var, self.finish_time_var,
                            self.current_file_var)
         self.files_completed_var.set("Parsing your files,please wait...")

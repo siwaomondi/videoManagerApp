@@ -13,10 +13,10 @@ from concurrent.futures import ThreadPoolExecutor, Executor
 from multiprocessing.pool import ThreadPool, Pool
 import time
 
-from constants import Constants
+from constants import Constants, open_webpage
 from apps.ytDownload.functions import split_link, generate_filename, generate_details
 
-
+#TODO: add progress bar to downloads
 class error_messages:
     invalid = "Invalid url. Confirm and try again",
     empty = "No url provided. Try again"
@@ -105,6 +105,10 @@ class YtDownloaderFrame(Frame):
         self.files_textbox = scrolledtext.ScrolledText(self.scroll_frame, height=15, bg=Constants.grey,
                                                        font=("Montserrat", 10))
         self.files_textbox.pack(fill="both")
+        self.footer_label = Label(self, bg=Constants.blue, text="YtDownloader by Siwa©",font=("Montserrat",10,))
+        self.footer_label.grid(row=7, column=0, columnspan=2)
+        self.footer_label.bind("<ButtonRelease-1>", open_webpage)
+
         self._reset_vars()
         self._render_file_names(intro=True)
 
@@ -142,7 +146,6 @@ class YtDownloaderFrame(Frame):
             self.is_playlist = True
 
         except Exception as e:
-            print(e)
             messagebox.showerror("Incorrect url", error_messages.invalid)
             return
         self.save_directory = filedialog.askdirectory().replace("/",
@@ -187,12 +190,9 @@ class YtDownloaderFrame(Frame):
                 self.completed_audio_list.append(title)
                 self.audio_list.append(f"{title}")
                 self._render_file_names(audio_download=True)
-                print(f"{title} downloaded")
             except Exception as e:
-                print(e)
                 self.audio_list.append(f"X {title}")
                 self.failed_audio_list.append(title)
-                print(f"{title} failed")
                 pass
             self.update_idletasks()
 
@@ -215,10 +215,7 @@ class YtDownloaderFrame(Frame):
             try:
                 audio_downloading_func(get_url=url)
             except Exception as e:
-                print(e)
                 pass
-        t = threading.Thread(target=func, daemon=True, name="Audio Thread")
-        print(f"audio download(s) has started")
         func()
         self._end_of_downloads(is_audio=True)
 
@@ -226,7 +223,6 @@ class YtDownloaderFrame(Frame):
 
     def _download_video_thread(self, linkList, threadNum):
         quality = self.download_quality.get()
-        print(f"Thread {threadNum} started :{len(linkList)} files")
 
         # using enumerate list to generate numbered file names in event of unnumbered file name or file numbering done at end of file name
         # to aid in file sorting in directory 
@@ -244,7 +240,6 @@ class YtDownloaderFrame(Frame):
                     else:
                         stream.get_highest_resolution().download(output_path=self.save_directory, max_retries=1,
                                                                  skip_existing=True)
-                print(f" Thread {threadNum} -->{filename} downloaded")
                 self.downloading_list.append(f"✓ {filename}")
                 self.completed_video_list.append(filename)
             except (pytExcept.PytubeError, AttributeError) as e:
@@ -252,7 +247,6 @@ class YtDownloaderFrame(Frame):
                 # self.skipped_video_url.append([index,url])
                 self.failed_video_list.append(url)
                 self.downloading_list.append(f"× {url}")
-                print(f"Thread {threadNum} --> {url} not downloaded")
             self._render_file_names(downloading=True)
             self.root.update_idletasks()
 
@@ -282,8 +276,6 @@ class YtDownloaderFrame(Frame):
         """runs the threads for video downloads"""
         self.download_details = generate_details(self.is_playlist, self.download_playlist, self.single_video_object)
         num_of_downloaders = len(self.links_break)
-        print(self.download_details)
-        print(f"Total threads : {num_of_downloaders}\n")
 
         threads = []
         for x in range(num_of_downloaders):
@@ -319,10 +311,8 @@ class YtDownloaderFrame(Frame):
         download_thread = Thread(target=self._downloadThreading, name="Main thread")
         download_thread.setDaemon(True)
         download_thread.start()
-        print(f'{download_thread.name} has started')
         download_thread.join()
         self._end_of_downloads()
-        print(f"{download_thread.name} finished")
         # self._render_file_names(final=True)
         # self._reset_vars()
 

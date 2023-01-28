@@ -3,19 +3,12 @@ import datetime
 import func_timeout
 from cv2 import (cv2)
 import subprocess
-import webbrowser
-
-personal_site = "https://github.com/Smtp272"
-
-def open_webpage(e):
-    webbrowser.open_new(personal_site)
 
 def calc_time(func):
     def wrapper(*args, **kwargs):
         start = time.perf_counter()
         result = func(*args, **kwargs)
         end = time.perf_counter()
-        print(f"{func.__name__} took {end - start} seconds")
         return result
 
     return wrapper
@@ -90,10 +83,11 @@ def calc_time_left(remaining_files, curr_iter, max_iter, t_start, completed):
     try:
         if len(remaining_files) > 10:
             raise FileExistsError("Too many files to approximate")
-        total = func_timeout.func_timeout(
-            5, generate_total_file_time, args=(remaining_files,))
-        t_left = total // 30
-        f_time = time.time() + t_left
+        else:
+            total = func_timeout.func_timeout(
+                5, generate_total_file_time, args=(remaining_files,))
+            t_left = total // 30
+            f_time = time.time() + t_left
 
     except (func_timeout.FunctionTimedOut, FileExistsError):
         t_elapsed = time.time() - t_start

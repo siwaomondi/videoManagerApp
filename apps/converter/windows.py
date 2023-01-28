@@ -1,10 +1,12 @@
 from tkinter import Toplevel,HORIZONTAL
 from tkinter.ttk import Progressbar
 from customtkinter import CTkButton, CTkLabel
+from constants import Constants
 
 
-
-def folder_select(btn_command, btn_colour, rx, ry, app_icon):
+def folder_select(btn_command,rx,ry):
+    app_icon=Constants.app_icon
+    btn_colour = Constants.blue
     save_location_window = Toplevel()
     save_location_window.title("Save Location")
     save_location_window.geometry(

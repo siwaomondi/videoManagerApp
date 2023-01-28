@@ -28,7 +28,8 @@ class VideoManager:
 
         #/**********FRAMES***************/
         self.mp4ConverterFrame = ConverterFrame(
-            root=self.root
+            root=self.root,rx=self.rx,ry=self.ry
+
         )
         self.ytDownloadFrame = YtDownloaderFrame(root=self.root)
         self.clipperFrame = ClipperFrame(root=self.root)
@@ -62,7 +63,7 @@ class VideoManager:
     def _hide_all_frames(self):      
         for frame in self.list_of_frames:
             frame.pack_forget()
-            
+                
     def _open_select_frame(self,frame):
         self._hide_all_frames()
         frame.config(bg=Constants.blue)
