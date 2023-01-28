@@ -1,0 +1,13 @@
+__pycache__
+apps/ytDownload/testenum.py
+apps/ytDownload/originalclone.py
+build
+dist
+.idea
+main.spec
+#pycache
+apps\ytDownload\__pycache__
+apps\home\__pycache__
+apps\converter\__pycache__
+apps\clipper\__pycache__
+
