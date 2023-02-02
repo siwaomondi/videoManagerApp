@@ -45,10 +45,10 @@ def generate_filename(yt_obj,idx,is_playlist=False,numbering=False):
     """returns formatted raw filename """
 
     f_name = getattr(yt_obj, "title")
-
     f_name = f_name.replace("/",
                             "_")  # catch file naming from youtube to avoid clash with directory naming [Errno 2] error
     f_name = f_name.replace("\\", "_")
+    f_name = f_name.replace(":", "-") #windows does not allow colon in filename catch error
 
     if is_playlist and numbering:
         try:
