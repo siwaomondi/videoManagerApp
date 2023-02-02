@@ -70,21 +70,21 @@ class ConverterFrame(Frame):
         self.description_label.grid(row=1, column=0, columnspan=2)
 
         self.select_files_btn = CTkButton(self, text="Select Files(s)", fg_color=Constants.grey,
-                                          command=lambda: self._manage_btn("select_files"))
+                                          command=lambda: self._manage_btns("select_files"))
         self.select_files_btn.grid(row=2, column=0, pady=5)
 
         self.select_files_btn = CTkButton(self, text="Select Folder", fg_color=Constants.grey,
-                                          command=lambda: self._manage_btn("select_folder"))
+                                          command=lambda: self._manage_btns("select_folder"))
         self.select_files_btn.grid(row=2, column=1)
 
         self.clear_btn = CTkButton(self, text="Clear Selection",
-                                   command=lambda: self._manage_btn(
+                                   command=lambda: self._manage_btns(
                                        "clear_selection"),
                                    fg_color=Constants.grey)
         self.clear_btn.grid(row=3, column=0, columnspan=2, pady=5)
 
         self.convert_btn = CTkButton(self, text="Convert selected files", fg_color="orange3", state="normal",
-                                     command=lambda: self._manage_btn("convert_selection"))
+                                     command=lambda: self._manage_btns("convert_selection"))
         self.convert_btn.grid(row=4, column=0, columnspan=2)
 
         self.progress_frame = Frame(self)
@@ -121,7 +121,7 @@ class ConverterFrame(Frame):
         self.convert_btn.configure(
             state=tkinter.NORMAL, text="Convert selected files")
         self.clear_btn.configure(state=tkinter.NORMAL, text="Clear Selection",
-                                 command=lambda: self._manage_btn("clear_selection"))
+                                 command=lambda: self._manage_btns("clear_selection"))
         time_taken = convert_time(time.time() - t_start)
         feedback = f"\n{self.completed} files converted.\n{self.duplicates} duplicates found.\n{self.failed + self.aborted} failed conversions.\n{len(self.conversion_list)} total files.\nTime taken = {time_taken}"
         if not self.event.is_set():
@@ -134,7 +134,7 @@ class ConverterFrame(Frame):
             self._render_file_names([], final=True, completed=False)
         self._reset_variables()
 
-    def _manage_btn(self, btn):
+    def _manage_btns(self, btn):
         def _clear_selection():
             self._reset_variables()
             self._render_file_names([])
@@ -253,7 +253,7 @@ class ConverterFrame(Frame):
         self.convert_btn.configure(
             state=tkinter.DISABLED, text="Converting files...")
         self.clear_btn.configure(text="Cancel current conversion",
-                                 command=lambda: self._manage_btn("end_current_conversion"))
+                                 command=lambda: self._manage_btns("end_current_conversion"))
 
         d_window = DWindow(self.event, self._cancel_conversion, Constants.grey, self.rx, self.ry, Constants.app_icon,
                            self.files_completed_var, self.time_left_var, self.finish_time_var,
