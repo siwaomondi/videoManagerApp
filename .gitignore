@@ -11,3 +11,4 @@ apps\home\__pycache__
 apps\converter\__pycache__
 apps\clipper\__pycache__
 
+.vscode/settings.json

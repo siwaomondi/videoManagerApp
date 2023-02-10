@@ -24,7 +24,7 @@ import concurrent.futures
 import time
 
 from constants import Constants, open_webpage
-from apps.ytDownload.functions import split_link, generate_filename, generate_details
+from apps.ytDownload.functions import split_link, generate_filename, generate_details,fetch_details
 
 
 # TODO: add progress bar to downloads
@@ -65,7 +65,9 @@ class YtDownloaderFrame(Frame):
         self.save_directory = ""
         self.links_break = []
         self.single_video_object = None
-        self.skipped = 0
+        self.skipped_files = 0
+        self.completed_files = 0
+        self.total_files = 1
         self.failed_video_list = []
         self.downloading_list = []
         self.completed_video_list = []
@@ -190,6 +192,7 @@ class YtDownloaderFrame(Frame):
                 self.single_video_object = YouTube(url)
             except pytExcept.RegexMatchError:
                 self.download_playlist = Playlist(url)
+                self.total_files = fetch_details(self.download_playlist, 'length')
                 self.is_playlist = True
             except Exception as e:
                 messagebox.showerror("Incorrect url", error_messages.invalid)
@@ -197,7 +200,7 @@ class YtDownloaderFrame(Frame):
             x = filedialog.askdirectory().replace(
                 "/", "\\"
             )# convert path to raw string for to avoid OSError: [Errno 22] Invalid argument
-     
+            
             if x:
                 self.save_directory =x  
                 if self.is_playlist:
@@ -221,7 +224,7 @@ class YtDownloaderFrame(Frame):
             self.video_event.clear()
             self.audio_event.clear()
             return
-
+        
     def _playlistDownload(self, singleLink, singleVideo=False):
         # TODO: add functionality to skip private/unavailable videos in playlist
         self._render_file_names(intro=True)  # clear textbox
@@ -250,7 +253,9 @@ class YtDownloaderFrame(Frame):
                 self.completed_audio_list.append(title)
                 self.audio_list.append(f"{title}")
                 self._render_file_names(audio_download=True)
+                self.completed_files +=1
             except Exception as e:
+                self.skipped_files +=1
                 self.audio_list.append(f"X {title}")
                 self.failed_audio_list.append(title)
                 pass
@@ -260,7 +265,7 @@ class YtDownloaderFrame(Frame):
             if self.is_playlist:
                 for idx, link in enumerate(self.download_playlist, start=1):
                     if self.audio_event.is_set():
-                        singleAudio(link, index=idx)
+                        singleAudio(link,idx)
                     else:
                         self.download_cancelled = True
                         break
@@ -287,7 +292,7 @@ class YtDownloaderFrame(Frame):
     def _download_video_thread(self, linkList):
         # using enumerate list to generate numbered file names in event of unnumbered file name or file numbering done at end of file name
         # to aid in file sorting in directory
-        def singleDownload(index, url):
+        def single_video_download(index, url):
             yt = YouTube(url)
             quality = self.download_quality.get()
             try:
@@ -298,26 +303,27 @@ class YtDownloaderFrame(Frame):
                 except Exception as e:
                     try:  # try renaming if possible
                         stream.get_highest_resolution().download(output_path=self.save_directory, filename=filename,
-                                                                 max_retries=1, skip_existing=True)
+                                                                 max_retries=2, skip_existing=True)
                     except Exception as e:
-                        stream.get_highest_resolution().download(output_path=self.save_directory, max_retries=1,
+                        stream.get_highest_resolution().download(output_path=self.save_directory, max_retries=2,
                                                                  skip_existing=True)
-                print(filename)
                 self.downloading_list.append(f"✓ {filename}")
                 self.completed_video_list.append(filename)
-            # except (pytExcept.PytubeError, AttributeError) as e:
+                self.completed_files += 1
+                print(f"{filename} completed")
             except Exception as e:
                 print(e)
-                self.skipped += 1
+                print(f"{url} skipped")
+                self.skipped_files += 1
                 self.failed_video_list.append(url)
-                self.downloading_list.append(f"× {url}")
+                self.downloading_list.append(f"× {url} failed")
             self._render_file_names(downloading=True)
             self.root.update_idletasks()
 
         def run_loop():
             for index, url in linkList:
                 if self.video_event.is_set():
-                    singleDownload(index, url)
+                    single_video_download(index, url)
                 else:                    
                     self.download_cancelled = True
                     break
@@ -346,6 +352,7 @@ class YtDownloaderFrame(Frame):
             self.is_playlist, self.download_playlist, self.single_video_object
         )
         num_of_downloaders = len(self.links_break)
+        
         threads = []
         for x in range(num_of_downloaders):
             t = threading.Thread(
@@ -356,9 +363,7 @@ class YtDownloaderFrame(Frame):
             threads.append(t)
             t.setDaemon(True)
             t.start()
-            
-        # for tt in threads:
-        #     tt.join()
+
         # TODO: add thread join method
 
     def _downloading_check(self):
@@ -376,8 +381,6 @@ class YtDownloaderFrame(Frame):
         download_thread.start()
         download_thread.join()
         self._end_of_downloads()
-        # self._render_file_names(final=True)
-        # self._reset_vars()
 
     def _cancel_conversion(self):
         return messagebox.askokcancel("Stop Downloads", "Cancel ongoing downloads?")
@@ -401,15 +404,17 @@ class YtDownloaderFrame(Frame):
         reverse_downloading_list = self.downloading_list[::-1]
         reverse_audio_list = self.audio_list[::-1]
 
-        if downloading:
-            v = ""
-            for i in reverse_downloading_list:
-                v += f"   {i}\n"
-            text = f"{self.download_details}\n\n{v}"
-        elif kwargs.get("audio_download"):
-            text = "DOWNLOADED AUDIO FILES\n\n"
-            for i in reverse_audio_list:
-                text += f"        {i}\n"
+        if downloading or kwargs.get("audio_download"):
+            description = f"COMPLETED FILES : {self.completed_files}/{self.total_files}\nFAILED/SKIPPED FILES : {self.skipped_files}"
+            if downloading:                
+                v = ""
+                for i in reverse_downloading_list:
+                    v += f"   {i}\n"
+                text = f"{self.download_details}\n\n{description}\n\n{v}"
+            elif kwargs.get("audio_download"):
+                text = f"DOWNLOADED AUDIO FILES\n\n{description}\n\n"
+                for i in reverse_audio_list:
+                    text += f"        {i}\n"
         else:
             if intro:
                 text = "DOWNLOADED FILES WILL BE DISPLAYED HERE"
@@ -493,7 +498,9 @@ class YtDownloaderFrame(Frame):
         self.video_quality.set("480p")
         self.links_break = []
         self.single_video_object = None
-        self.skipped = 0
+        self.skipped_files = 0
+        self.completed_files = 0
+        self.total_files = 1
         self.downloading_list = []
         self.completed_video_list = []
         self.failed_video_list = []
