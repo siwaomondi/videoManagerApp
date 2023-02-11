@@ -85,7 +85,6 @@ class YtDownloaderFrame(Frame):
         self.threads = []
         self.video_event = Event()
         self.audio_event = Event()
-        # self.video_event.set()
 
         # ***********FRAME BODY************/
         self.root = root
@@ -164,8 +163,7 @@ class YtDownloaderFrame(Frame):
                 text="Cancel download",
                 command=lambda: self._manage_btns("end_downloads"),
             )
-        # if False in (self.video_event.is_set(),self.audio_event.is_set()):
-        #     self._end_of_downloads()
+
         if btn == "clear_url_entry":
             self.link_entry.delete(0, END)
         elif btn == "start_video_download" or btn == "start_audio_download":
@@ -226,18 +224,17 @@ class YtDownloaderFrame(Frame):
             return
         
     def _playlistDownload(self, singleLink, singleVideo=False):
-        # TODO: add functionality to skip private/unavailable videos in playlist
         self._render_file_names(intro=True)  # clear textbox
         links = []
         if self.is_playlist:
             for url in self.download_playlist.video_urls:
-                links.append(url)
+                links.append(url)                
         else:
             links = [singleLink]
-
+            
+        """use multiple threads to download videos"""
         self.links_break = split_link(self._enumerate_linklist(links), self.threadCount)
-        self._downloadThreading()
-
+        self._video_download_threading()
     def _enumerate_linklist(self, links):
         """returns enumerated links for eventual file numbering on playlist download"""
         return [[videoNum, link] for videoNum, link in enumerate(links, start=1)]
@@ -328,7 +325,7 @@ class YtDownloaderFrame(Frame):
                     self.download_cancelled = True
                     break
 
-        run_loop()
+        run_loop()        
 
     def _end_of_downloads(self, is_audio=False):
         feedback = "Cancelled" if self.download_cancelled else "done"
@@ -346,13 +343,12 @@ class YtDownloaderFrame(Frame):
         self._downloading_check()
         self._reset_vars()
 
-    def _downloadThreading(self):
+    def _video_download_threading(self):
         """runs the threads for video downloads"""
         self.download_details = generate_details(
             self.is_playlist, self.download_playlist, self.single_video_object
         )
         num_of_downloaders = len(self.links_break)
-        
         threads = []
         for x in range(num_of_downloaders):
             t = threading.Thread(
@@ -363,9 +359,7 @@ class YtDownloaderFrame(Frame):
             threads.append(t)
             t.setDaemon(True)
             t.start()
-
         # TODO: add thread join method
-
     def _downloading_check(self):
         """disable buttons while download is ongoing"""
         if self.video_event.isSet() or self.audio_event.isSet():
@@ -374,13 +368,6 @@ class YtDownloaderFrame(Frame):
         else:
             self.download_audio_btn.configure(state=tkinter.NORMAL)
             self.download_video_btn.configure(state=tkinter.NORMAL)
-
-    def _main_thread(self):
-        download_thread = Thread(target=self._downloadThreading, name="Main thread")
-        download_thread.setDaemon(True)
-        download_thread.start()
-        download_thread.join()
-        self._end_of_downloads()
 
     def _cancel_conversion(self):
         return messagebox.askokcancel("Stop Downloads", "Cancel ongoing downloads?")
@@ -403,8 +390,9 @@ class YtDownloaderFrame(Frame):
         reverse_download_list = self.completed_video_list[::-1]
         reverse_downloading_list = self.downloading_list[::-1]
         reverse_audio_list = self.audio_list[::-1]
-
-        if downloading or kwargs.get("audio_download"):
+        if intro:
+                text = "DOWNLOADED FILES WILL BE DISPLAYED HERE"
+        elif downloading or kwargs.get("audio_download"):
             description = f"COMPLETED FILES : {self.completed_files}/{self.total_files}\nFAILED/SKIPPED FILES : {self.skipped_files}"
             if downloading:                
                 v = ""
@@ -414,78 +402,75 @@ class YtDownloaderFrame(Frame):
             elif kwargs.get("audio_download"):
                 text = f"DOWNLOADED AUDIO FILES\n\n{description}\n\n"
                 for i in reverse_audio_list:
-                    text += f"        {i}\n"
+                    text += f"        {i}\n"                
         else:
-            if intro:
-                text = "DOWNLOADED FILES WILL BE DISPLAYED HERE"
+            not_downloaded = "FAILED URLS\n\n"
+            if self.failed_video_list:
+                for index, url in self.failed_video_list:
+                    not_downloaded += f"•   FileNum: {index} url:{url}\n"
             else:
-                not_downloaded = "FAILED URLS\n\n"
-                if self.failed_video_list:
-                    for index, url in self.failed_video_list:
-                        not_downloaded += f"•   FileNum: {index} url:{url}\n"
-                else:
-                    not_downloaded += "•    No downloads failed"
+                not_downloaded += "•    No downloads failed"
 
-                downloaded = "DOWNLOADED FILES\n\n"
-                if reverse_download_list:
-                    for i in self.completed_video_list:
-                        downloaded += f"    {i}\n"
+            downloaded = "DOWNLOADED FILES\n\n"
+            if reverse_download_list:
+                for i in self.completed_video_list:
+                    downloaded += f"    {i}\n"
+            else:
+                downloaded += "•    No files Downloaded"
+
+            def final_text(status, completed_list, failed_list, video=True):
+                downloaded = (
+                    "DOWNLOADED VIDEO FILES\n\n"
+                    if video
+                    else "DOWNLOADED AUDIO FILES\n\n"
+                )
+                not_downloaded = (
+                    "FAILED VIDEO URLS\n\n"
+                    if video
+                    else "FAILED AUDIO DOWNLOADS\n\n"
+                )
+                if completed_list:
+                    for i in completed_list[::-1]:
+                        downloaded += f"•    {i}\n"
                 else:
                     downloaded += "•    No files Downloaded"
-
-                def final_text(status, completed_list, failed_list, video=True):
-                    downloaded = (
-                        "DOWNLOADED VIDEO FILES\n\n"
-                        if video
-                        else "DOWNLOADED AUDIO FILES\n\n"
-                    )
-                    not_downloaded = (
-                        "FAILED VIDEO URLS\n\n"
-                        if video
-                        else "FAILED AUDIO DOWNLOADS\n\n"
-                    )
-                    if completed_list:
-                        for i in completed_list[::-1]:
-                            downloaded += f"•    {i}\n"
-                    else:
-                        downloaded += "•    No files Downloaded"
-                    if failed_list:
-                        for i in failed_list:
-                            not_downloaded += f"•    {i}\n"
-                    else:
-                        not_downloaded += "•    No downloads failed"
-                    attachment = f"{not_downloaded}\n\n{downloaded}"
-
-                    return f"SESSION {(status).capitalize()}\n\n{attachment}"
-
-                if kwargs.get("audio_finished"):
-                    if not self.download_cancelled:
-                        text = final_text(
-                            "complete",
-                            self.completed_audio_list,
-                            self.failed_audio_list,
-                            False,
-                        )
-                    else:
-                        text = final_text(
-                            "cancelled",
-                            self.completed_audio_list,
-                            self.failed_audio_list,
-                            False,
-                        )
+                if failed_list:
+                    for i in failed_list:
+                        not_downloaded += f"•    {i}\n"
                 else:
-                    if final:
-                        text = final_text(
-                            "COMPLETE",
-                            self.completed_video_list,
-                            self.failed_video_list,
-                        )
-                    elif cancelled:
-                        text = final_text(
-                            "CANCELLED",
-                            self.completed_video_list,
-                            self.failed_video_list,
-                        )
+                    not_downloaded += "•    No downloads failed"
+                attachment = f"{not_downloaded}\n\n{downloaded}"
+
+                return f"SESSION {(status).capitalize()}\n\n{attachment}"
+
+            if kwargs.get("audio_finished"):
+                if not self.download_cancelled:
+                    text = final_text(
+                        "complete",
+                        self.completed_audio_list,
+                        self.failed_audio_list,
+                        False,
+                    )
+                else:
+                    text = final_text(
+                        "cancelled",
+                        self.completed_audio_list,
+                        self.failed_audio_list,
+                        False,
+                    )
+            else:
+                if final:
+                    text = final_text(
+                        "COMPLETE",
+                        self.completed_video_list,
+                        self.failed_video_list,
+                    )
+                elif cancelled:
+                    text = final_text(
+                        "CANCELLED",
+                        self.completed_video_list,
+                        self.failed_video_list,
+                    )
 
         self.files_textbox.config(state="normal")
         self.files_textbox.delete(1.0, "end")
