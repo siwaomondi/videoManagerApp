@@ -41,6 +41,8 @@ class EmptyUrl(Exception):
 
 class SingleVideoPlaylistError(Exception):
     pass
+class FilenameError(Exception):
+    pass
 
 
 class YtDownloaderFrame(Frame):
@@ -296,14 +298,23 @@ class YtDownloaderFrame(Frame):
                 filename = f"{generate_filename(yt_obj=yt, idx=index, is_playlist=self.is_playlist, numbering=self.number_files)}.mp4"
                 stream = yt.streams
                 try:
-                    stream.get_by_resolution(str(quality)).download(output_path=self.save_directory,filename=filename, max_retries=1)
+                    stream.get_by_resolution(quality).download(output_path=self.save_directory,filename=filename, max_retries=1)
                 except Exception as e:
                     try:  # try renaming if possible
                         stream.get_highest_resolution().download(output_path=self.save_directory, filename=filename,
-                                                                 max_retries=2, skip_existing=True)
+                                                                max_retries=2, skip_existing=True)
                     except Exception as e:
+                        #get filename if rename fails
+                        try:
+                            original_filename = yt.title
+                        except: 
+                            try:
+                                original_filename = getattr(yt, "title")
+                            except:
+                                raise FilenameError("Could not get filename")
+                        filename = f"{original_filename}.mp4"
                         stream.get_highest_resolution().download(output_path=self.save_directory, max_retries=2,
-                                                                 skip_existing=True)
+                                                                skip_existing=True)
                 self.downloading_list.append(f"✓ {filename}")
                 self.completed_video_list.append(filename)
                 self.completed_files += 1
@@ -325,7 +336,7 @@ class YtDownloaderFrame(Frame):
                     self.download_cancelled = True
                     break
 
-        run_loop()        
+        run_loop()
 
     def _end_of_downloads(self, is_audio=False):
         feedback = "Cancelled" if self.download_cancelled else "done"
@@ -349,6 +360,7 @@ class YtDownloaderFrame(Frame):
             self.is_playlist, self.download_playlist, self.single_video_object
         )
         num_of_downloaders = len(self.links_break)
+        
         threads = []
         for x in range(num_of_downloaders):
             t = threading.Thread(
@@ -359,7 +371,9 @@ class YtDownloaderFrame(Frame):
             threads.append(t)
             t.setDaemon(True)
             t.start()
+
         # TODO: add thread join method
+
     def _downloading_check(self):
         """disable buttons while download is ongoing"""
         if self.video_event.isSet() or self.audio_event.isSet():
