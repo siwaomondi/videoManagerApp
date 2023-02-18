@@ -62,25 +62,25 @@ class ConverterFrame(Frame):
         self.files_completed_var = StringVar()
 
         self.main_label = CTkLabel(
-            self, text="Audiofyyy!", text_font=("Montserrat", 30, "bold"))
+            self, text="Audiofyyy!", font=Constants.title_font)
         self.main_label.grid(row=0, column=0, columnspan=2, pady=(0, 10))
         self.description_label = CTkLabel(self,
                                           text=f"Convert your {self.file_types} files to audio (.mp3) files",
-                                          text_font=("Montserrat", 15), wraplength=900)
+                                          font=Constants.instuction_font, wraplength=900)
         self.description_label.grid(row=1, column=0, columnspan=2)
 
-        self.select_files_btn = CTkButton(self, text="Select Files(s)", fg_color=Constants.grey,
+        self.select_files_btn = CTkButton(self, text="Select Files(s)", **Constants.btn_colour,
                                           command=lambda: self._manage_btns("select_files"))
         self.select_files_btn.grid(row=2, column=0, pady=5)
 
-        self.select_files_btn = CTkButton(self, text="Select Folder", fg_color=Constants.grey,
+        self.select_folder_btn = CTkButton(self, text="Select Folder", **Constants.btn_colour,
                                           command=lambda: self._manage_btns("select_folder"))
-        self.select_files_btn.grid(row=2, column=1)
+        self.select_folder_btn.grid(row=2, column=1)
 
         self.clear_btn = CTkButton(self, text="Clear Selection",
                                    command=lambda: self._manage_btns(
                                        "clear_selection"),
-                                   fg_color=Constants.grey)
+                                   **Constants.btn_colour)
         self.clear_btn.grid(row=3, column=0, columnspan=2, pady=5)
 
         self.convert_btn = CTkButton(self, text="Convert selected files", fg_color="orange3", state="normal",
@@ -95,13 +95,13 @@ class ConverterFrame(Frame):
         self.time_left_label = CTkLabel(self.progress_frame, bg_color=Constants.blue, textvariable=self.time_left_label_var)
         self.time_left_label.grid(row=0, column=1)
         self.scroll_frame = Frame(self)
-        self.scroll_frame.grid(row=6, column=0, columnspan=2, padx=(10, 10))
+        self.scroll_frame.grid(row=6, column=0, columnspan=2, padx=(10, 10),pady=(10, 10))
         self.files_textbox = scrolledtext.ScrolledText(self.scroll_frame, height=15, bg=Constants.grey,
-                                                       font=("Montserrat", 10))
+                                                       font=Constants.scroll_font)
         self.files_textbox.pack(fill="both")
         self.files_textbox.tag_add("top_highlight", "1.0", "1.end+1c")
 
-        self.footer_label = Label(self, bg=Constants.blue, text="Audiofy by Siwa©",font=("Montserrat",10,))
+        self.footer_label = Label(self, bg=Constants.blue, text="Audiofy by Siwa©",font=Constants.footer_font)
         self.footer_label.grid(row=7, column=0, columnspan=2)
         self.footer_label.bind("<ButtonRelease-1>", open_webpage)
         # mainloop
@@ -297,7 +297,6 @@ class ConverterFrame(Frame):
 
     def _render_file_names(self, list_to_render, converting=False, final=False, completed=True):
         """renders page content to bottom text box"""
-        tag_font = ("Montserrat", 10, "bold")
         text = ""
 
         if final:
@@ -364,13 +363,13 @@ class ConverterFrame(Frame):
             self.files_textbox.tag_add("top_highlight", "1.0", "1.end+1c")
             if converting:
                 self.files_textbox.tag_config(
-                    "top_highlight", font=tag_font, foreground="orange3")
+                    "top_highlight", font=Constants.tag_font, foreground="orange3")
             elif completed:
                 self.files_textbox.tag_config(
-                    "top_highlight", font=tag_font, foreground="green")
+                    "top_highlight", font=Constants.tag_font, foreground="green")
             else:
                 self.files_textbox.tag_config(
-                    "top_highlight", font=tag_font, foreground="red")
+                    "top_highlight", font=Constants.tag_font, foreground="red")
         else:
             self.files_textbox.tag_remove("top_highlight", "1.0", "1.end+1c")
         self.files_textbox.config(wrap=WORD, state="disabled")

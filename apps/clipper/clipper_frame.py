@@ -23,20 +23,20 @@ class ClipperFrame(Frame):
         #***********FRAME BODY************/
         self.root = root
         self.main_label = CTkLabel(
-            self, text="Clipper", text_font=("Montserrat", 30, "bold"))
+            self, text="Clipper", font=Constants.title_font)
         self.main_label.grid(row=0, column=0, columnspan=2)
-        self.clip_label = CTkLabel(self, text=f"Clip your audio and video files", text_font=("Montserrat", 15),
+        self.clip_label = CTkLabel(self, text=f"Clip your audio and video files", font=Constants.instuction_font,
                                    wraplength=900)
         self.clip_label.grid(row=1, column=0, columnspan=2)
 
-        self.select_files_btn = CTkButton(self, text="Select File", fg_color=Constants.grey,
+        self.select_files_btn = CTkButton(self, text="Select File", **Constants.btn_colour,
                                           command=lambda: self._manage_btns("select_file"))
         self.select_files_btn.grid(row=2, column=0, pady=5)
         
         self.num_clips_entry = CTkOptionMenu(self, variable = self.num_clips ,values=self.clip_number_list)
         self.num_clips_entry.grid(row=3, column=0, columnspan=2, pady=10)
 
-        self.download_video_btn = CTkButton(self, text="Clip selected", fg_color=Constants.grey,
+        self.download_video_btn = CTkButton(self, text="Clip selected", **Constants.btn_colour,
                                             command=lambda: self._manage_btns('start_clipping'))
 
         self.download_video_btn.grid(row=4, column=0, pady=(0, 10))
