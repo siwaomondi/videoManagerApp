@@ -12,6 +12,7 @@ pip = "*"
 opencv-python = "==4.5.5.64"
 pytube = "*"
 customtkinter = "*"
+future = "*"
 
 [dev-packages]
 

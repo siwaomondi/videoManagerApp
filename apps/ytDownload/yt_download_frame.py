@@ -17,10 +17,7 @@ import pytube.exceptions as pytExcept
 from pytube import Playlist
 from threading import Thread, Event
 import threading
-import queue
 
-from concurrent.futures import ThreadPoolExecutor, Executor
-import concurrent.futures
 import time
 
 from constants import Constants, open_webpage
@@ -304,7 +301,8 @@ class YtDownloaderFrame(Frame):
                 filename = f"{generate_filename(yt_obj=yt, idx=index, is_playlist=self.is_playlist, numbering=self.number_files)}.mp4"
                 stream = yt.streams
                 try:
-                    stream.filter(res=str(quality)).first().download(output_path=self.save_directory, filename=filename,
+                    #use prograssive = true to get both video and audio
+                    stream.filter(res=str(quality),progressive=True).first().download(output_path=self.save_directory, filename=filename,
                                                                max_retries=2)
                 except:
                     try:  # try renaming if possible
