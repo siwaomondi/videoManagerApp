@@ -5,13 +5,13 @@ name = "pypi"
 
 [packages]
 ffprobe = "*"
-customtkinter = "*"
 ffmpeg-python = "*"
 ez-setup = "*"
 func-timeout = "*"
 pip = "*"
-opencv-python = "*"
+opencv-python = "==4.5.5.64"
 pytube = "*"
+customtkinter = "*"
 
 [dev-packages]
 

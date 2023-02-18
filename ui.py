@@ -1,4 +1,4 @@
-from tkinter import filedialog, Menu, Frame, END, scrolledtext, messagebox, WORD, StringVar,Label
+from tkinter import filedialog, Menu, Frame, END, scrolledtext, messagebox, WORD, StringVar,Label,BOTH
 import tkinter
 
 from customtkinter import CTkButton, CTkLabel, CTk
@@ -39,7 +39,7 @@ class VideoManager:
 
         # HOME FRAME
         # self.home_frame.pack(fill="both", expand=True, padx=30, pady=(10, 10))
-        self.list_of_frames = [self.home_frame,self.ytDownloadFrame,self.mp4ConverterFrame]
+        self.list_of_frames = [self.home_frame,self.ytDownloadFrame,self.mp4ConverterFrame,self.clipperFrame]
 
         # MAIN MENU
         self.main_menu = Menu(self.root)
@@ -67,4 +67,4 @@ class VideoManager:
     def _open_select_frame(self,frame):
         self._hide_all_frames()
         frame.config(bg=Constants.blue)
-        frame.pack(fill="both", expand=1, padx=30, pady=(10, 10))
+        frame.pack(padx=30, pady=(20, 10))
