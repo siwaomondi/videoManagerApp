@@ -35,6 +35,7 @@ class ClipperFrame(Frame):
         self.clipped_files = []
         self.file_save_directory = ""
         self.num_clipped = 0
+        self.action_btn = None
         # ***********FRAME BODY************/
 
         # frame entry constants
@@ -66,14 +67,14 @@ class ClipperFrame(Frame):
         self.definite_size_frame.grid(row=0, column=0, sticky=W)
         self.num_clips_label = CTkLabel(self.definite_size_frame, text="Number of clips:",
                                         font=Constants.instuction_font)
-        self.num_clips_label.grid(row=0, column=0, sticky=W,pady=20)
+        self.num_clips_label.grid(row=0, column=0, sticky=W, pady=20)
         self.num_clips_entry = CTkOptionMenu(self.definite_size_frame, variable=self.num_clips,
                                              values=self.clip_number_list, width=80)
-        self.num_clips_entry.grid(row=0, column=1,sticky=E)
+        self.num_clips_entry.grid(row=0, column=1, sticky=E)
 
         self.size_of_clips_label = CTkLabel(self.definite_size_frame, text="Size of clip[hrs:min:sec]:",
                                             font=Constants.instuction_font)
-        self.size_of_clips_label.grid(row=1, column=0)
+        self.size_of_clips_label.grid(row=1, column=0,sticky=W)
         self.size_of_clips_frame = Frame(self.definite_size_frame, background=Constants.blue)
         self.size_of_clips_frame.grid(row=1, column=1, sticky=E)
         self.size_of_clips_hr_entry = CTkEntry(self.size_of_clips_frame, **clip_entry_settings)
@@ -107,16 +108,22 @@ class ClipperFrame(Frame):
         self.end_sec_entry.grid(row=0, column=3)
 
         # clipping btns
-        side_padding = {"padx":(40,0)}
-        self.clipping_size_btn = CTkButton(self.definite_size_frame, text=self.clipping_options[1], **Constants.btn_colour,
+        side_padding = {"padx": (40, 0)}
+        self.clipping_size_btn = CTkButton(self.definite_size_frame, text=self.clipping_options[1],
+                                           **Constants.btn_colour,
                                            command=lambda: self._manage_btns('clip_size'))
-        self.clipping_size_btn.grid(row=0, column=2,**side_padding)
-        self.clipping_num_btn = CTkButton(self.definite_size_frame, text=self.clipping_options[0], **Constants.btn_colour,
+        self.clipping_size_btn.grid(row=1, column=2, **side_padding)
+        self.clipping_num_btn = CTkButton(self.definite_size_frame, text=self.clipping_options[0],
+                                          **Constants.btn_colour,
                                           command=lambda: self._manage_btns('clip_number'))
-        self.clipping_num_btn.grid(row=1, column=2,**side_padding)
+        self.clipping_num_btn.grid(row=0, column=2, **side_padding)
         self.clipping_range_btn = CTkButton(self.definite_size_frame, text="Clip range", **Constants.btn_colour,
                                             command=lambda: self._manage_btns('clip_range'))
-        self.clipping_range_btn.grid(row=2, column=2,**side_padding)
+        self.clipping_range_btn.grid(row=2, column=2, **side_padding)
+
+        self.clipping_btns_list = [{"btn": self.clipping_range_btn, "text": "Clip range", "command": "clip_range"},
+                                   {"btn": self.clipping_size_btn, "text": "Clip size", "command": "clip_size"},
+                                   {"btn": self.clipping_num_btn, "text": "Clip number", "command": "clip_number"}]
 
         # Scroll Frame
         self.scroll_frame = Frame(self)
@@ -152,15 +159,17 @@ class ClipperFrame(Frame):
             else:
                 self._upload_files("a")
         elif command == "clip_number":
-            self._clip_file()
+            self.action_btn=self.clipping_num_btn
+            self._clip_file("number")
         elif command == "clip_size":
-            pass
+            self.action_btn=self.clipping_size_btn
+            self._clip_file("size")
+        elif command == "clip_range":
+            self.action_btn=self.clipping_range_btn           
+            self._clip_file("range")
         elif command == "stop_clipping":
             self.clipping_event.clear()
-        elif command == "clip_range":
-            self._clip_file("range")
-            pass
-
+            
     def _upload_files(self, mode):
         if mode == "a":
             file = filedialog.askopenfile(
@@ -175,7 +184,7 @@ class ClipperFrame(Frame):
         self.file_save_directory = ntpath.dirname(self.clip_file_path)
         self._render_file_names(file_select=True)
 
-    def _clip_file(self, clip_type="multiple"):
+    def _clip_file(self, clip_type):
         # TODO: add clipping by size eg 30 mins
         def cancel_message(m):
             if m == "no_file":
@@ -184,6 +193,9 @@ class ClipperFrame(Frame):
                 messagebox.showerror("Cancel", "Clipping canceled")
             elif m == "invalid_range":
                 messagebox.showerror("Couldn't clip", "Invalid time stamps.\nCould not clip file")
+            elif m == "size_zero":
+                messagebox.showerror("File size error", "Clipping size not specified\n")
+                
 
         def file_type_clip(file_type, conversion_file, file_path, start, end):
             clip = conversion_file.subclip(start, end)
@@ -198,6 +210,9 @@ class ClipperFrame(Frame):
 
         if self.clip_file_path == '':
             cancel_message("no_file")
+            return
+        if clip_type == "size" and self._get_clipping_size()==0:
+            cancel_message("size_zero")
             return
         save = messagebox.askyesnocancel(title='Save directory', message="Save in current directory?")
         if save == None:
@@ -223,19 +238,22 @@ class ClipperFrame(Frame):
             try:
                 is_range = False
                 range_file_name = ''
-                if clip_type == "multiple":
+                if clip_type == "number" or "size":
                     length = conversion_file.duration
-                    sections = self._generate_sections(length)
-                    for index, (start, end) in enumerate(sections, start=1):
-                        if self.clipping_event.is_set():
-                            clip_name = f"part{index} - {file_name}{file_ext}"
-                            file_path = ntpath.join(self.file_save_directory, clip_name)
-                            response = file_type_clip(file_type, conversion_file, file_path, start, end)
-                            self.num_clipped += 1
-                            self.clipped_files.append(clip_name)
-                            self._render_file_names(clipping=True)
-                        else:
-                            break
+                    sections = self._generate_sections(length,clip_type)
+                    if sections == "error":
+                        raise ClippingRangeError("Too many clippings")
+                    else:
+                        for index, (start, end) in enumerate(sections, start=1):
+                            if self.clipping_event.is_set():
+                                clip_name = f"part{index} - {file_name}{file_ext}"
+                                file_path = ntpath.join(self.file_save_directory, clip_name)
+                                response = file_type_clip(file_type, conversion_file, file_path, start, end)
+                                self.num_clipped += 1
+                                self.clipped_files.append(clip_name)
+                                self._render_file_names(clipping=True)
+                            else:
+                                break
                 elif clip_type == "range":
                     is_range = True
                     file_id = math.ceil(time.time())  # use time to give video id
@@ -246,10 +264,11 @@ class ClipperFrame(Frame):
                     response = file_type_clip(file_type, conversion_file, file_path, start, end)
                     if response == "error":
                         os.remove(path=file_path)  # delete error file
-                        raise ClippingRangeError("Invalid ")
+                        raise ClippingRangeError("Invalid range")
                 self._end_of_clipping(range_clip=is_range, range_clip_file=range_file_name)
-            except ClippingRangeError:
-                cancel_message("invalid_range")
+            except ClippingRangeError as e:
+                if e == "Invalid range":                
+                    cancel_message("invalid_range")
                 self.clipping_event.clear()
                 self._clipping_check()
                 return
@@ -279,14 +298,25 @@ class ClipperFrame(Frame):
         if self.clipping_event.is_set():
             self.select_audio_files_btn.configure(state=tkinter.DISABLED)
             self.select_video_files_btn.configure(state=tkinter.DISABLED)
-            self.clipping_num_btn.configure(
-                text=self.clipping_options[1], command=lambda: self._manage_btns("stop_clipping")
+            for i in self.clipping_btns_list:
+                btn = i["btn"]
+                if btn == self.action_btn:
+                    pass
+                else:
+                    btn.configure(state=tkinter.DISABLED)
+                btn
+            self.action_btn.configure(
+                text="Stop Clipping", command=lambda: self._manage_btns("stop_clipping")
             )
         else:
             self.select_audio_files_btn.configure(state=tkinter.NORMAL)
             self.select_video_files_btn.configure(state=tkinter.NORMAL)
-            self.clipping_num_btn.configure(
-                text=self.clipping_options[0], command=lambda: self._manage_btns("start_clipping")
+            for i in self.clipping_btns_list:
+                btn = i["btn"]
+                if btn != self.action_btn:
+                    btn.configure(state=tkinter.NORMAL)
+            self.action_btn.configure(
+                text=i["text"], command=lambda: self._manage_btns(i["command"])
             )
 
     def _end_of_clipping(self, error="", range_clip=False, range_clip_file=""):
@@ -314,12 +344,21 @@ class ClipperFrame(Frame):
             return "audio"
         else:
             return "video"
-
-    def _generate_sections(self, len):
-        clip_seconds = self._get_seconds(self.size_of_clips_hr_entry, self.size_of_clips_min_entry,
-                                         self.size_of_clips_sec_entry)
-        num_clips = int(self.num_clips.get())
-        individual_clip = math.ceil(len / num_clips)
+    def _get_clipping_size(self):
+        return self._get_seconds(self.size_of_clips_hr_entry, self.size_of_clips_min_entry,
+                                            self.size_of_clips_sec_entry)
+    def _generate_sections(self, len,clip_type):
+        if clip_type=="size":
+            clip_size_in_seconds = self._get_clipping_size()
+            num_clips = math.ceil(len/clip_size_in_seconds)
+            if num_clips>20:
+                messagebox.showerror(title="Too small clipping",message="The file generates too many clips")
+                return "error"
+            else:
+                individual_clip = clip_size_in_seconds              
+        elif clip_type=="number":
+            num_clips = int(self.num_clips.get())
+            individual_clip = math.ceil(len / num_clips)
         sections = []
         for i in range(num_clips):
             if i == 0:
@@ -339,6 +378,7 @@ class ClipperFrame(Frame):
         self.clipped_files = []
         self.num_clipped = 0
         self.num_clips.set(2)
+        self.action_btn = None
 
     def _render_file_names(self, clipping=False, completed=False, file_select=False, range_clip=False,
                            range_clip_file=""):
