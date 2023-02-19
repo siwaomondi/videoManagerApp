@@ -17,9 +17,9 @@ class VideoManager:
         # self.root = tkinter.Tk()
         self.root = CTk()
         self.root.iconbitmap( Constants.app_icon)
-        self.root.geometry(f"{800}x{600}")
-        self.root.minsize(800, 600)
-        self.root.maxsize(800, 600)
+        self.root.geometry(f"{800}x{650}")
+        self.root.minsize(800, 650)
+        self.root.maxsize(800, 650)
         self.root.config(  # padx=50, pady=50,
             bg=Constants.blue)
 
