@@ -9,6 +9,7 @@ import os
 from threading import Thread, Event
 from constants import Constants, open_webpage
 import time
+import datetime
 
 
 class ClippingRangeError(Exception):
@@ -35,6 +36,8 @@ class ClipperFrame(Frame):
         self.clipped_files = []
         self.file_save_directory = ""
         self.num_clipped = 0
+        self.file_length = 0
+        self.formatted_file_length = 0
         self.action_btn = None
         # ***********FRAME BODY************/
 
@@ -182,6 +185,7 @@ class ClipperFrame(Frame):
 
         self.clip_file_path = file.name
         self.file_save_directory = ntpath.dirname(self.clip_file_path)
+        self._get_file_details()
         self._render_file_names(file_select=True)
 
     def _clip_file(self, clip_type):
@@ -227,7 +231,6 @@ class ClipperFrame(Frame):
         def clipping_thread():
             self.clipping_event.set()
             self._clipping_check()
-            file_name = ntpath.basename(self.clip_file_path)
             file_n, file_ext = os.path.splitext(self.clip_file_path)
             file_name = ntpath.basename(file_n)
             file_type = self._check_extension(file_ext)
@@ -281,6 +284,16 @@ class ClipperFrame(Frame):
         print(f"{t.name} has started ...")
         t.start()
 
+    def _get_file_details(self):
+        file_n, file_ext = os.path.splitext(self.clip_file_path)
+        file_name = ntpath.basename(file_n)
+        file_type = self._check_extension(file_ext)
+        if file_type == "video":
+            conversion_file = VideoFileClip(self.clip_file_path)
+        elif file_type == "audio":
+            conversion_file = AudioFileClip(self.clip_file_path)
+        self.file_length = conversion_file.duration
+        self.formatted_file_length = str(datetime.timedelta(seconds=math.floor(self.file_length)))
     def _get_clip_range(self):
         start = self._get_seconds(self.start_hour_entry, self.start_min_entry, self.start_sec_entry)
         end = self._get_seconds(self.end_hour_entry, self.end_min_entry, self.end_sec_entry)
@@ -378,13 +391,16 @@ class ClipperFrame(Frame):
         self.clipped_files = []
         self.num_clipped = 0
         self.total_clips =0
+        self.file_length = 0
+        self.formatted_file_length = 0
         self.num_clips.set(2)
         self.action_btn = None
 
     def _render_file_names(self, clipping=False, completed=False, file_select=False, range_clip=False,
                            range_clip_file=""):
+        intro_text = f"Selected file:{self.clip_file_path}\n\nSave location:    {self.file_save_directory}\nFile Length:    {self.formatted_file_length}\n" 
         text = ""
-        title = f"Selected file:{self.clip_file_path}\n\nSave location:    {self.file_save_directory}\n\nNumber of clips:  {self.total_clips}\n\nClipped files:  {self.num_clipped}/{self.total_clips}\n\n"
+        title = intro_text + f"Number of clips:  {self.total_clips}\n\nClipped files:  {self.num_clipped}/{self.total_clips}\n\n"
         reverse_list = self.clipped_files[::-1]
         if clipping:
             v = ""
@@ -403,7 +419,7 @@ class ClipperFrame(Frame):
             else:
                 text = f"Selected file:{self.clip_file_path}\n\nSave location:    {self.file_save_directory}\n\n      • {range_clip_file} clipped"
         elif file_select:
-            text = f"Selected file:    {self.clip_file_path}\n\nSave location:    {self.file_save_directory}"
+            text = intro_text
         else:
             text = "YOUR CLIPPED FILES WILL APPEAR HERE"
 
