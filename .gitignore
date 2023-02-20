@@ -1,9 +1,14 @@
 __pycache__
 apps/ytDownload/testenum.py
 apps/ytDownload/originalclone.py
-build
-dist
-.idea
+**/build
+**/dist
+**/.dist
+**.idea
+**.vscode
+**.venv
+exe_gen.txt
+
 main.spec
 #pycache
 apps\ytDownload\__pycache__
