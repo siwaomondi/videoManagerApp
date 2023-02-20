@@ -1,6 +1,6 @@
 from tkinter import filedialog, Menu, Frame, END, scrolledtext, messagebox, WORD, StringVar,Label,BOTH
 import tkinter
-
+import os
 from customtkinter import CTkButton, CTkLabel, CTk
 class FileExistsError(Exception):
     pass
@@ -14,9 +14,9 @@ from constants import Constants
 class VideoManager:
     def __init__(self):
         # /********ROOT**********/
-        # self.root = tkinter.Tk()
         self.root = CTk()
-        self.root.iconbitmap( Constants.app_icon)
+        basedir = os.path.dirname(__file__)
+        self.root.iconbitmap(os.path.join(basedir, Constants.app_icon))
         self.root.geometry(f"{800}x{650}")
         self.root.minsize(800, 650)
         self.root.maxsize(800, 650)
