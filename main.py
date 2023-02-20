@@ -1,6 +1,9 @@
 from ui import VideoManager
 import sys
-output = open("output.txt", "wt")
+import os
+basedir = os.path.dirname(__file__)
+log_text = os.path.join(basedir, "logs/log.txt")
+output = open(log_text, "wt")
 sys.stdout = output
 sys.stderr = output
 if __name__ == "__main__":
