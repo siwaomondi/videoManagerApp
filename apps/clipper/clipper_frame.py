@@ -21,7 +21,7 @@ class ClipperFrame(Frame):
     def __init__(self, root):
         super().__init__(root)
         self.acceptable_audio_file_list = ["MP3", "WAV", "M4A"]
-        self.acceptable_video_file_list = ["MP4", "OGV", "WEBM", "OGG", "AVI", "MOV","MKV"]
+        self.acceptable_video_file_list = ["MP4", "OGV", "WEBM", "OGG", "AVI", "MOV", "MKV"]
         self.file_codecs = {
             ##mp3 codecs
             ".mp3": "pcm_s16le",
@@ -37,7 +37,7 @@ class ClipperFrame(Frame):
             ".mov": "mpeg4",
             ".mkv": "libvpx"
         }
-        
+
         self.audio_file_list = " ".join(self.acceptable_audio_file_list).lower()
         self.video_file_list = " ".join(self.acceptable_video_file_list).lower()
         self.clip_number_list = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17',
@@ -282,7 +282,7 @@ class ClipperFrame(Frame):
                                 file_path = ntpath.join(self.file_save_directory, clip_name)
                                 response = file_type_clip(file_ext, file_type, conversion_file, file_path, start, end)
                                 if response == "error":
-                                    os.remove(path=file_path) 
+                                    os.remove(path=file_path)
                                     raise ClippingRangeError("encoding_error")
                                 self.num_clipped += 1
                                 self.clipped_files.append(clip_name)
