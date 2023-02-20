@@ -77,7 +77,7 @@ class ClipperFrame(Frame):
 
         self.size_of_clips_label = CTkLabel(self.definite_size_frame, text="Size of clip[hrs:min:sec]:",
                                             font=Constants.instuction_font)
-        self.size_of_clips_label.grid(row=1, column=0,sticky=W)
+        self.size_of_clips_label.grid(row=1, column=0, sticky=W)
         self.size_of_clips_frame = Frame(self.definite_size_frame, background=Constants.blue)
         self.size_of_clips_frame.grid(row=1, column=1, sticky=E)
         self.size_of_clips_hr_entry = CTkEntry(self.size_of_clips_frame, **clip_entry_settings)
@@ -162,17 +162,17 @@ class ClipperFrame(Frame):
             else:
                 self._upload_files("a")
         elif command == "clip_number":
-            self.action_btn=self.clipping_num_btn
+            self.action_btn = self.clipping_num_btn
             self._clip_file("number")
         elif command == "clip_size":
-            self.action_btn=self.clipping_size_btn
+            self.action_btn = self.clipping_size_btn
             self._clip_file("size")
         elif command == "clip_range":
-            self.action_btn=self.clipping_range_btn           
+            self.action_btn = self.clipping_range_btn
             self._clip_file("range")
         elif command == "stop_clipping":
             self.clipping_event.clear()
-            
+
     def _upload_files(self, mode):
         if mode == "a":
             file = filedialog.askopenfile(
@@ -189,7 +189,7 @@ class ClipperFrame(Frame):
         self._render_file_names(file_select=True)
 
     def _clip_file(self, clip_type):
-        #TODO add progressbar to clipping
+        # TODO add progressbar to clipping
         def cancel_message(m):
             if m == "no_file":
                 messagebox.showerror("No files", "No file selected to clip")
@@ -199,7 +199,6 @@ class ClipperFrame(Frame):
                 messagebox.showerror("Couldn't clip", "Invalid time stamps.\nCould not clip file")
             elif m == "size_zero":
                 messagebox.showerror("File size error", "Clipping size not specified\n")
-                
 
         def file_type_clip(file_type, conversion_file, file_path, start, end):
             clip = conversion_file.subclip(start, end)
@@ -215,7 +214,7 @@ class ClipperFrame(Frame):
         if self.clip_file_path == '':
             cancel_message("no_file")
             return
-        if clip_type == "size" and self._get_clipping_size()==0:
+        if clip_type == "size" and self._get_clipping_size() == 0:
             cancel_message("size_zero")
             return
         save = messagebox.askyesnocancel(title='Save directory', message="Save in current directory?")
@@ -243,7 +242,7 @@ class ClipperFrame(Frame):
                 range_file_name = ''
                 if clip_type == "number" or "size":
                     length = conversion_file.duration
-                    sections = self._generate_sections(length,clip_type)
+                    sections = self._generate_sections(length, clip_type)
                     if sections == "error":
                         raise ClippingRangeError("Too many clippings")
                     else:
@@ -270,7 +269,7 @@ class ClipperFrame(Frame):
                         raise ClippingRangeError("Invalid range")
                 self._end_of_clipping(range_clip=is_range, range_clip_file=range_file_name)
             except ClippingRangeError as e:
-                if e == "Invalid range":                
+                if e == "Invalid range":
                     cancel_message("invalid_range")
                 self.clipping_event.clear()
                 self._clipping_check()
@@ -294,6 +293,7 @@ class ClipperFrame(Frame):
             conversion_file = AudioFileClip(self.clip_file_path)
         self.file_length = conversion_file.duration
         self.formatted_file_length = str(datetime.timedelta(seconds=math.floor(self.file_length)))
+
     def _get_clip_range(self):
         start = self._get_seconds(self.start_hour_entry, self.start_min_entry, self.start_sec_entry)
         end = self._get_seconds(self.end_hour_entry, self.end_min_entry, self.end_sec_entry)
@@ -357,19 +357,21 @@ class ClipperFrame(Frame):
             return "audio"
         else:
             return "video"
+
     def _get_clipping_size(self):
         return self._get_seconds(self.size_of_clips_hr_entry, self.size_of_clips_min_entry,
-                                            self.size_of_clips_sec_entry)
-    def _generate_sections(self, len,clip_type):
-        if clip_type=="size":
+                                 self.size_of_clips_sec_entry)
+
+    def _generate_sections(self, len, clip_type):
+        if clip_type == "size":
             clip_size_in_seconds = self._get_clipping_size()
-            self.total_clips = math.ceil(len/clip_size_in_seconds)
-            if self.total_clips>20:
-                messagebox.showerror(title="Too small clipping",message="The file generates too many clips")
+            self.total_clips = math.ceil(len / clip_size_in_seconds)
+            if self.total_clips > 20:
+                messagebox.showerror(title="Too small clipping", message="The file generates too many clips")
                 return "error"
             else:
-                individual_clip = clip_size_in_seconds              
-        elif clip_type=="number":
+                individual_clip = clip_size_in_seconds
+        elif clip_type == "number":
             self.total_clips = int(self.num_clips.get())
             individual_clip = math.ceil(len / self.total_clips)
         sections = []
@@ -390,7 +392,7 @@ class ClipperFrame(Frame):
         self.clipping_cancelled = False
         self.clipped_files = []
         self.num_clipped = 0
-        self.total_clips =0
+        self.total_clips = 0
         self.file_length = 0
         self.formatted_file_length = 0
         self.num_clips.set(2)
@@ -398,7 +400,7 @@ class ClipperFrame(Frame):
 
     def _render_file_names(self, clipping=False, completed=False, file_select=False, range_clip=False,
                            range_clip_file=""):
-        intro_text = f"Selected file:{self.clip_file_path}\n\nSave location:    {self.file_save_directory}\nFile Length:    {self.formatted_file_length}\n" 
+        intro_text = f"Selected file:{self.clip_file_path}\n\nSave location:    {self.file_save_directory}\nFile Length:    {self.formatted_file_length}\n"
         text = ""
         title = intro_text + f"Number of clips:  {self.total_clips}\n\nClipped files:  {self.num_clipped}/{self.total_clips}\n\n"
         reverse_list = self.clipped_files[::-1]
