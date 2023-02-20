@@ -18,4 +18,4 @@ apps\clipper\__pycache__
 
 .vscode/settings.json
 VidMan.spec
-logs
+vidman_logs

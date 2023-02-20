@@ -5,7 +5,8 @@ block_cipher = None
 
 added_files = [
 ('c:\\users\\brian\\desktop\\projects\\miscellaneous\\videomanagerapp\\.venv\\lib\\site-packages/customtkinter', 'customtkinter/'),
-('c:\\users\\brian\\desktop\\projects\\miscellaneous\\videomanagerapp\\icon.ico', '.')
+('c:\\users\\brian\\desktop\\projects\\miscellaneous\\videomanagerapp\\icon.ico', '.'),
+("C:\\Users\\brian\\Desktop\\Projects\\miscellaneous\\videoManagerApp\\vidman_logs","vidman_logs/")
 ]
 
 a = Analysis(
