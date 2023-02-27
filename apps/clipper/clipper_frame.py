@@ -233,10 +233,15 @@ class ClipperFrame(Frame):
             try:
                 print(f"{file_path} started clipping")
                 if file_type == "video":
-                    clip.write_videofile(file_path, **has_codec)
+                    try:
+                        clip.write_videofile(file_path)
+                    except:
+                        clip.write_videofile(file_path, **has_codec)
                 else:
-                    clip.write_audiofile(file_path, **has_codec)
-
+                    try:
+                        clip.write_audiofile(file_path)
+                    except:
+                        clip.write_audiofile(file_path, **has_codec)
             except Exception as e:
                 ##stop clipping if encoding is wrong
                 return "error"
